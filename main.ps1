@@ -9,18 +9,22 @@ Set-AzContext -Subscription $subscriptionId #Select the right Azure subscription
 
 #Get all Azure VMs which are in running state and are running Windows
 $myAzureVMs = Get-AzVM -ResourceGroupName $resourceGroup -status | Where-Object {$_.PowerState -eq "VM running" -and $_.StorageProfile.OSDisk.OSType -eq "Windows"}
-Write-Host $myAzureVMs
+Write-Host $myAzureVMs.ComputerName.
 
 #Run the script against all VMs in parallel
 $myAzureVMs | ForEach-Object -Parallel {
-    Write-Host "Running scripts..."
     $out = Invoke-AzVMRunCommand `
         -ResourceGroupName $_.ResourceGroupName `
         -Name $_.Name  `
         -CommandId 'RunPowerShellScript' `
-        -ScriptPath .\hello.ps1
+        -ScriptPath .\hello.ps1 
+    #Formating the Output with the VM name
+    
+    try {
+        $output = $_.Name + " " + $out.Value[0].Message
+        $output  
+    }
+    catch [System.Exception]{
+        "Error in " + $_.Name
+    }
 }
-
-#Formating the Output with the VM name
-$output = $_.Name + " " + $out.Value[0].Message
-$output
